@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:todo/models/item.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(MyApp());
 
@@ -23,9 +25,9 @@ class HomePage extends StatefulWidget {
   var items = new List<Item>();
   HomePage() {
     items = [];
-    items.add(Item(title: "Item 1", done: false));
-    items.add(Item(title: "Item 2", done: true));
-    items.add(Item(title: "Item 3", done: false));
+    // items.add(Item(title: "Item 1", done: false));
+    // items.add(Item(title: "Item 2", done: true));
+    // items.add(Item(title: "Item 3", done: false));
   }
   @override
   _HomePageState createState() => _HomePageState();
@@ -42,6 +44,7 @@ class _HomePageState extends State<HomePage> {
         Item(title: newTaskCtrl.text, done: false),
       );
       newTaskCtrl.text = "";
+      save();
     });
   }
 
@@ -50,9 +53,31 @@ class _HomePageState extends State<HomePage> {
 
     setState(() {
       widget.items.removeAt(index);
+      save();
     });
   }
 
+  Future load() async {
+    var prefs = await SharedPreferences.getInstance();
+    var data = prefs.getString('data');
+
+    if (data != null) {
+      Iterable decoded = jsonDecode(data);
+      List<Item> result = decoded.map((e) => Item.fromJson(e)).toList();
+      setState(() {
+        widget.items = result;
+      });
+    }
+  }
+
+  save() async {
+    var prefs = await SharedPreferences.getInstance();
+    await prefs.setString('data', jsonEncode(widget.items));
+  }
+
+  _HomePageState() {
+    load();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,6 +106,7 @@ class _HomePageState extends State<HomePage> {
                 onChanged: (value) {
                   setState(() {
                     item.done = value;
+                    save();
                   });
                 },
               ),
